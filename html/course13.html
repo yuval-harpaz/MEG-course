@@ -44,7 +44,7 @@ span.comment {color: #228B22}
 span.string {color: #A020F0}
 span.untermstring {color: #B20000}
 span.syscmd {color: #B28C00}
-
+span.brown {color: #990000}
 pre.codeoutput {
   color: #666666;
   padding: 10px;
@@ -62,7 +62,7 @@ p.footer {
   color: gray;
 }
 
-  </style></head><body><div class="content"><h1>Random permutations for multiple comparisons</h1><!--introduction--><p>Here we perform dependent sample ttest for every voxel. we have two measurements per subject, one before and one after some task (alpha1 and alpha2. We run the ttest in the end but first we compote the ttest with random run order, so for subject 1 we take alpha1 - alpha2 and for subject 2 the other way around. then we see if we still have main effect, and what size of clusters we get if we mask with a fixed threshold. We run it n times and make a distribution of the maximum t value and maximum cluster size. In the end we see if the real ttest yielded an extreme t value anywhere or whether the clusters are extremely big.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Set N permutations and Threshold</a></li><li><a href="#2">Run the permutations</a></li><li><a href="#3">Making the real ttest</a></li></ul></div><h2>Set N permutations and Threshold<a name="1"></a></h2><pre class="codeinput">n=100;
+  </style></head><body><div class="content"><h1>Random permutations for multiple comparisons</h1><!--introduction--><p>Here we perform dependent sample ttest for every voxel. we have two measurements per subject, one before and one after some task (alpha1 and alpha2. We run the ttest in the end but first we compote the ttest with random run order, so for subject 1 we take alpha1 - alpha2 and for subject 2 the other way around. then we see if we still have main effect, and what size of clusters we get if we mask with a fixed threshold. We run it n times and make a distribution of the maximum t value and maximum cluster size. In the end we see if the real ttest yielded an extreme t value anywhere or whether the clusters are extremely big.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Set N permutations and Threshold</a></li><li><a href="#2">Run the permutations</a></li><li><a href="#3">Making the real ttest </a></li><li><a href="#4">randpermute.py: prepare a template text file for for ANOVA F test</a></li><li><a href="#5">Running randpermute.py with a shell script</a></li></ul></div><h2>Set N permutations and Threshold<a name="1"></a></h2><pre class="codeinput">n=100;
 tThresh=2.044;
 </pre><h2>Run the permutations<a name="2"></a></h2><pre class="codeinput">clustSize=zeros(n,2);
 <span class="keyword">if</span> exist(<span class="string">'tMinMax.txt'</span>,<span class="string">'file'</span>)
@@ -191,6 +191,181 @@ Initializing: X11.
 
 ** AFNI concludes: What a long strange trip it's been!
 <img vspace="5" hspace="5" src="course13_my01.png" alt="">
+
+
+</pre><h2>randpermute.py: prepare a template text file for for ANOVA F test<a name="4"></a></h2>
+Here we run pots of ANOVAs with random assignments to conditions. First you have to make a template text file as in the example below:
+<pre class="codeinput">
+<span class="keyword">################### the content of template.sh file</span>
+cmd:
+3dANOVA -mask ~/SAM_BIU/docs/MASKbrain+tlrc -levels 2 $permute -ftr out
+
+output:
+out+tlrc
+
+permute:
+-dset $1 quad0501/alpha1+tlrc -dset $2 quad0501/alpha2+tlrc
+-dset $1 quad0601/alpha1+tlrc -dset $2 quad0601/alpha2+tlrc
+-dset $1 quad0701/alpha1+tlrc -dset $2 quad0701/alpha2+tlrc
+-dset $1 quad0901/alpha1+tlrc -dset $2 quad0901/alpha2+tlrc
+-dset $1 quad1001/alpha1+tlrc -dset $2 quad1001/alpha2+tlrc
+-dset $1 quad1201/alpha1+tlrc -dset $2 quad1201/alpha2+tlrc
+-dset $1 quad1401/alpha1+tlrc -dset $2 quad1401/alpha2+tlrc
+-dset $1 quad1501/alpha1+tlrc -dset $2 quad1501/alpha2+tlrc
+-dset $1 quad1601/alpha1+tlrc -dset $2 quad1601/alpha2+tlrc
+-dset $1 quad1801/alpha1+tlrc -dset $2 quad1801/alpha2+tlrc
+-dset $1 quad2001/alpha1+tlrc -dset $2 quad2001/alpha2+tlrc
+-dset $1 quad2501/alpha1+tlrc -dset $2 quad2501/alpha2+tlrc
+-dset $1 quad2601/alpha1+tlrc -dset $2 quad2601/alpha2+tlrc
+-dset $1 quad2701/alpha1+tlrc -dset $2 quad2701/alpha2+tlrc
+-dset $1 quad2901/alpha1+tlrc -dset $2 quad2901/alpha2+tlrc
+-dset $1 quad3001/alpha1+tlrc -dset $2 quad3001/alpha2+tlrc
+-dset $1 quad3101/alpha1+tlrc -dset $2 quad3101/alpha2+tlrc
+-dset $1 quad3601/alpha1+tlrc -dset $2 quad3601/alpha2+tlrc
+-dset $1 quad3801/alpha1+tlrc -dset $2 quad3801/alpha2+tlrc
+-dset $1 quad4001/alpha1+tlrc -dset $2 quad4001/alpha2+tlrc
+-dset $1 quad4101/alpha1+tlrc -dset $2 quad4101/alpha2+tlrc
+-dset $1 quad4201/alpha1+tlrc -dset $2 quad4201/alpha2+tlrc
+
+values:
+1
+2
+<span class="keyword">###################</span>
+</pre><h2>Running randpermute.py with a shell script<a name="5"></a></h2>
+You run the following lines in bash terminal (no matlab here).
+Best to arrange the below lines in a script, say permute.sh.
+Execute it from the terminal by ./permute.sh .
+Dont forget to change permissions of .sh files to be executable.
+
+<pre class="codeinput">
+<span class="keyword"># run n permutations, save output in a text file called permFval</span>
+randpermute.py -n 1001 -v template.sh > permFval
+<span class="keyword"># get just the F values, write them to Fval file, sorted</span>
+<span class="brown">grep</span> '###' permFval | <span class="brown">cut</span> -f15- -d' ' | <span class="brown">sort</span> -g -r > Fval
+<span class="keyword"># get the line with the 5% greatest F</span>
+old_IFS=$IFS
+IFS=$'\n'
+lines=($(<span class="brown">cat</span> Fval)) # array
+IFS=$old_IFS
+rowNum=($(<span class="brown">awk</span> 'END { print int(NR/20) }' Fval))
+
+<span class="keyword"># clean directory</span>
+<span class="brown">rm</span> permFval
+<span class="brown">rm</span> *corr*
+<span class="brown">rm</span> Post_Pre_F+tlrc*
+<span class="keyword"># run the real F test, call it Post_Pre_F</span>
+3dANOVA -mask /home/yuval/SAM_BIU/docs/MASKbrain+tlrc -levels 2 \
+-dset 1 quad0501/alpha1+tlrc -dset 2 quad0501/alpha2+tlrc \
+-dset 1 quad0601/alpha1+tlrc -dset 2 quad0601/alpha2+tlrc \
+-dset 1 quad0701/alpha1+tlrc -dset 2 quad0701/alpha2+tlrc \
+-dset 1 quad0901/alpha1+tlrc -dset 2 quad0901/alpha2+tlrc \
+-dset 1 quad1001/alpha1+tlrc -dset 2 quad1001/alpha2+tlrc \
+-dset 1 quad1201/alpha1+tlrc -dset 2 quad1201/alpha2+tlrc \
+-dset 1 quad1401/alpha1+tlrc -dset 2 quad1401/alpha2+tlrc \
+-dset 1 quad1501/alpha1+tlrc -dset 2 quad1501/alpha2+tlrc \
+-dset 1 quad1601/alpha1+tlrc -dset 2 quad1601/alpha2+tlrc \
+-dset 1 quad1801/alpha1+tlrc -dset 2 quad1801/alpha2+tlrc \
+-dset 1 quad2001/alpha1+tlrc -dset 2 quad2001/alpha2+tlrc \
+-dset 1 quad2501/alpha1+tlrc -dset 2 quad2501/alpha2+tlrc \
+-dset 1 quad2601/alpha1+tlrc -dset 2 quad2601/alpha2+tlrc \
+-dset 1 quad2701/alpha1+tlrc -dset 2 quad2701/alpha2+tlrc \
+-dset 1 quad2901/alpha1+tlrc -dset 2 quad2901/alpha2+tlrc \
+-dset 1 quad3001/alpha1+tlrc -dset 2 quad3001/alpha2+tlrc \
+-dset 1 quad3101/alpha1+tlrc -dset 2 quad3101/alpha2+tlrc \
+-dset 1 quad3601/alpha1+tlrc -dset 2 quad3601/alpha2+tlrc \
+-dset 1 quad3801/alpha1+tlrc -dset 2 quad3801/alpha2+tlrc \
+-dset 1 quad4001/alpha1+tlrc -dset 2 quad4001/alpha2+tlrc \
+-dset 1 quad4101/alpha1+tlrc -dset 2 quad4101/alpha2+tlrc \
+-dset 1 quad4201/alpha1+tlrc -dset 2 quad4201/alpha2+tlrc -ftr Post_Pre_F
+<span class="keyword"># display result</span>
+<span class="brown">echo</span>
+<span class="brown">echo</span>
+<span class="brown">echo</span> "########## CRITICAL F ##########"
+<span class="brown">echo</span> "           F = "${lines[$rowNum]}
+</pre><pre class="codeoutput">
+++ 3dANOVA: AFNI version=AFNI_2011_12_21_1014 (Mar  1 2013) [64-bit]
+++ Authored by: B. Douglas Ward
+++ Mask from dataset '~/SAM_BIU/docs/MASKbrain+tlrc' has 11541 voxels
+
+** Changes have been made for 3dANOVA computations.
+   For details, please see:
+   http://afni.nimh.nih.gov/sscc/gangc/ANOVA_Mod.html
+
+*+ WARNING: +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*+ WARNING: out[1] scale to shorts mean misfit error = 12.1% -- ** Take Care
+ + a) Numerical precision has been lost when truncating results
+       from 32-bit floating point to 16-bit integers (shorts).
+ + b) Consider writing datasets out in float format.
+       In most AFNI programs, use the '-float' option.
+ + c) This warning is a new message, but is an old issue
+       that arises when storing results in an integer format.
+ + d) Don't panic! These messages likely originate in peripheral
+       or unimportant voxels. They mean that you must examine your output.
+       "Assess the situation and keep a calm head about you,
+        because it doesn't do anybody any good to panic."
+++ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++ Writing combined dataset into ./out+tlrc.HEAD
+ + created 1 FDR curves in header
+randpermute.py: #^^^^^^^^^#
+randpermute.py: 3dANOVA -mask ~/SAM_BIU/docs/MASKbrain+tlrc -levels 2  -dset 2 quad0501/alpha1+tlrc -dset 1 quad0501/alpha2+tlrc -dset 1 quad0601/alpha1+tlrc -dset 2 quad0601/alpha2+tlrc -dset 1 quad0701/alpha1+tlrc -dset 2 quad0701/alpha2+tlrc -dset 2 quad0901/alpha1+tlrc -dset 1 quad0901/alpha2+tlrc -dset 1 quad1001/alpha1+tlrc -dset 2 quad1001/alpha2+tlrc -dset 1 quad1201/alpha1+tlrc -dset 2 quad1201/alpha2+tlrc -dset 2 quad1401/alpha1+tlrc -dset 1 quad1401/alpha2+tlrc -dset 2 quad1501/alpha1+tlrc -dset 1 quad1501/alpha2+tlrc -dset 1 quad1601/alpha1+tlrc -dset 2 quad1601/alpha2+tlrc -dset 1 quad1801/alpha1+tlrc -dset 2 quad1801/alpha2+tlrc -dset 2 quad2001/alpha1+tlrc -dset 1 quad2001/alpha2+tlrc -dset 2 quad2501/alpha1+tlrc -dset 1 quad2501/alpha2+tlrc -dset 2 quad2601/alpha1+tlrc -dset 1 quad2601/alpha2+tlrc -dset 2 quad2701/alpha1+tlrc -dset 1 quad2701/alpha2+tlrc -dset 2 quad2901/alpha1+tlrc -dset 1 quad2901/alpha2+tlrc -dset 1 quad3001/alpha1+tlrc -dset 2 quad3001/alpha2+tlrc -dset 1 quad3101/alpha1+tlrc -dset 2 quad3101/alpha2+tlrc -dset 2 quad3601/alpha1+tlrc -dset 1 quad3601/alpha2+tlrc -dset 2 quad3801/alpha1+tlrc -dset 1 quad3801/alpha2+tlrc -dset 1 quad4001/alpha1+tlrc -dset 2 quad4001/alpha2+tlrc -dset 2 quad4101/alpha1+tlrc -dset 1 quad4101/alpha2+tlrc -dset 2 quad4201/alpha1+tlrc -dset 1 quad4201/alpha2+tlrc -ftr out
+randpermute.py: #^^^^^^^^^#
+randpermute.py: Running 1001 permutations (max 4194304).
+Maximum significance level will be p < 0.5
+1++ 3dANOVA: AFNI version=AFNI_2011_12_21_1014 (Mar  1 2013) [64-bit]
+++ Authored by: B. Douglas Ward
+++ Mask from dataset '/home/yuval/SAM_BIU/docs/MASKbrain+tlrc' has 11541 voxels
+
+** Changes have been made for 3dANOVA computations.
+   For details, please see:
+   http://afni.nimh.nih.gov/sscc/gangc/ANOVA_Mod.html
+
+*+ WARNING: +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*+ WARNING: out[1] scale to shorts mean misfit error = 11.4% -- ** Take Care
+ + a) Numerical precision has been lost when truncating results
+       from 32-bit floating point to 16-bit integers (shorts).
+ + b) Consider writing datasets out in float format.
+       In most AFNI programs, use the '-float' option.
+ + c) This warning is a new message, but is an old issue
+       that arises when storing results in an integer format.
+ + d) Don't panic! These messages likely originate in peripheral
+       or unimportant voxels. They mean that you must examine your output.
+       "Assess the situation and keep a calm head about you,
+        because it doesn't do anybody any good to panic."
+++ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++ Writing combined dataset into ./out+tlrc.HEAD
+ + created 1 FDR curves in header
+++ 3dcalc: AFNI version=AFNI_2011_12_21_1014 (Mar  1 2013) [64-bit]
+++ Authored by: A cast of thousands
+++ Output dataset ./tmp+tlrc.BRIK
+++ 3dbucket: AFNI version=AFNI_2011_12_21_1014 (Mar  1 2013) [64-bit]
+++ 3dANOVA: AFNI version=AFNI_2011_12_21_1014 (Mar  1 2013) [64-bit]
+++ Authored by: B. Douglas Ward
+++ Mask from dataset '/home/yuval/SAM_BIU/docs/MASKbrain+tlrc' has 11541 voxels
+Data set dimensions:  nx = 32  ny = 38  nz = 30  nxyz = 36480 
+
+** Changes have been made for 3dANOVA computations.
+   For details, please see:
+   http://afni.nimh.nih.gov/sscc/gangc/ANOVA_Mod.html
+
+*+ WARNING: +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*+ WARNING: Post_Pre_F[1] scale to shorts mean misfit error = 12.1% -- ** Take Care
+ + a) Numerical precision has been lost when truncating results
+       from 32-bit floating point to 16-bit integers (shorts).
+ + b) Consider writing datasets out in float format.
+       In most AFNI programs, use the '-float' option.
+ + c) This warning is a new message, but is an old issue
+       that arises when storing results in an integer format.
+ + d) Don't panic! These messages likely originate in peripheral
+       or unimportant voxels. They mean that you must examine your output.
+       "Assess the situation and keep a calm head about you,
+        because it doesn't do anybody any good to panic."
+++ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++ Writing combined dataset into ./Post_Pre_F+tlrc.HEAD
+ + created 1 FDR curves in header
+
+
+########## CRITICAL F ##########
+           F = 8.34
 
 </pre><p class="footer"><br>
       Published with MATLAB&reg; 7.11<br></p></div><!--
