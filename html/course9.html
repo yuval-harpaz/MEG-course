@@ -641,90 +641,77 @@ source =
         avg: [1x1 struct]
         cfg: [1x1 struct]
 
-</pre><img vspace="5" hspace="5" src="course9_07.png" alt=""> <h2>below see a brave attempt to use MNE with a single shell.<a name="10"></a></h2><h2>prepare a surface wrapping the brain<a name="11"></a></h2><pre class="codeinput">load <span class="string">~/ft_BIU/matlab/files/sMRI.mat</span>
-mri_realign=sMRI;
-mri_realign.transform=inv(M1)*sMRI.transform;
-cfg           = [];
-cfg.coordsys  = <span class="string">'4d'</span>;
-cfg.output    = {<span class="string">'brain'</span>};
-seg           = ft_volumesegment(cfg, mri_realign);
-hs=ft_convert_units(ft_read_headshape(<span class="string">'hs_file'</span>),<span class="string">'mm'</span>)
-cfg = [];
-volseg = ft_prepare_singleshell(cfg,seg);
-volseg=ft_convert_units(volseg,<span class="string">'mm'</span>);
-figure;
-plot3pnt(hs.pnt,<span class="string">'rx'</span>);hold <span class="string">on</span>;ft_plot_mesh(volseg.bnd);
-</pre><pre class="codeoutput">the input is volume data with dimensions [91 109 91]
-Converting the coordinate system from 4d to spm
-Warning: QFORM0 representation has been rounded. 
-Warning: QFORM0 representation has been rounded. 
-performing the segmentation on the specified volume
-Warning: QFORM0 representation has been rounded. 
-Warning: QFORM0 representation has been rounded. 
-Warning: QFORM0 representation has been rounded. 
-Warning: QFORM0 representation has been rounded. 
-creating brainmask
-smoothing brainmask with a 5-voxel FWHM kernel
-thresholding brainmask at a relative threshold of 0.500
-the call to "ft_volumesegment" took 21 seconds and an estimated 0 MB
-converting units from 'm' to 'mm'
-
-hs = 
-
-     pnt: [4988x3 double]
-     fid: [1x1 struct]
-    unit: 'mm'
-
-not downsampling brain
-the call to "ft_volumedownsample" took 0 seconds and an estimated 0 MB
-using the segmentation approach
-using the segmented MRI
-triangulating the boundary of compartment 1
-converting MRI surface points from cm into mm
-segmentation compartment 1 of 1 completed
-the call to "ft_prepare_mesh" took 0 seconds and an estimated 0 MB
-the call to "ft_prepare_singleshell" took 0 seconds and an estimated 0 MB
-converting units from 'cm' to 'mm'
-</pre><img vspace="5" hspace="5" src="course9_08.png" alt=""> <h2>compute MNE and display time of interest<a name="12"></a></h2><pre class="codeinput">cfg = [];
+</pre><img vspace="5" hspace="5" src="course9_mneVol.png" alt=""> <h2>Compute MNE and display time of interest.<a name="10"></a></h2>
+<pre class="codeinput">cfg = [];
 cfg.covariance = <span class="string">'yes'</span>;
 cfg.covariancewindow = [-inf 0];
 cov = ft_timelockanalysis(cfg, stdAvg);
 
+
+[vol,grid,mesh,M1]=headmodel_BIU([],[],5,[],<span class="string">'localspheres'</span>);
 cfg = [];
-cfg.grad = ft_convert_units(stdAvg.grad,<span class="string">'mm'</span>);
 cfg.channel =<span class="string">'MEG'</span>;
-cfg.grid.pos = volseg.bnd.pnt;
-cfg.grid.inside = 1:size(volseg.bnd.pnt,1);
+cfg.grid.pos = mesh.tess_ctx.vert;
+cfg.grid.inside = [1:size(mesh.tess_ctx.vert,1)]';
 cfg.vol = vol;
+cfg.grad=ft_convert_units(stdAvg.grad,<span class="string">'mm'</span>);
 leadfield = ft_prepare_leadfield(cfg);
+
 cfg=[];
 cfg.method = <span class="string">'mne'</span>;
 cfg.grid = leadfield;
 cfg.vol = vol;
-cfg.mne.lambda = 1e8;
+cfg.mne.lambda = 1.2e9;
+<span class="comment">%cfg.mne.lambda = 1e9;</span>
 cov.grad=ft_convert_units(cov.grad,<span class="string">'mm'</span>)
 source = ft_sourceanalysis(cfg,cov);
 figure;
-ft_plot_mesh(volseg.bnd, <span class="string">'vertexcolor'</span>, source.avg.pow(:,264));
+bnd.pnt=mesh.tess_ctx.vert;
+bnd.tri=mesh.tess_ctx.face;
+ft_plot_mesh(bnd, <span class="string">'vertexcolor'</span>, source.avg.pow(:,264));
 </pre><pre class="codeoutput">the input is timelock data with 248 channels and 1018 timebins
+Warning: the trial definition in the configuration is inconsistent with the actual data 
+Warning: reconstructing sampleinfo by assuming that the trials are consecutive segments of a
+continuous recording 
 averaging trials
 averaging trial 1 of 1
 the call to "ft_timelockanalysis" took 0 seconds and an estimated 0 MB
+evaluating trialfunction 'trialfun_beg'
+reading header...
+applying digital weights in the gradiometer balancing matrix
+undoing the Supine balancing
+found 1 events
+created 1 trials
+the call to "ft_definetrial" took 1 seconds and an estimated 0 MB
+applying digital weights in the gradiometer balancing matrix
+undoing the Supine balancing
+processing channel { 'TRIGGER' 'RESPONSE' 'MLzA' 'MLyA' 'MLzaA' 'MLyaA' 'MLxA' 'A22' 'MLxaA' 'A2' 'MRzA' 'MRxA' 
+reading and preprocessing
+reading and preprocessing trial 1 from 1
+the call to "ft_preprocessing" took 1 seconds and an estimated 0 MB
+channel = GyxA, not enough surface points, using all points
+the call to "ft_prepare_localspheres_mm" took 5 seconds and an estimated 0 MB
+undoing the Supine balancing
+single sphere,    2562 surface points, center = [11.7  1.9 45.2], radius = 80.7
+creating dipole grid based on user specified 3D grid
+26381 dipoles inside, 4736 dipoles outside brain
 converting units from 'm' to 'mm'
 using headmodel specified in the configuration
 using gradiometers specified in the configuration
 creating dipole grid based on user specified dipole positions
-3000 dipoles inside, 0 dipoles outside brain
+8196 dipoles inside, 0 dipoles outside brain
 the call to "ft_prepare_sourcemodel" took 0 seconds and an estimated 0 MB
 computing leadfield
-computing leadfield 1/3000
-computing leadfield 2/3000
+computing leadfield 1/8196
+Warning: The input units are unknown for points and S/unknown for conductivity 
+computing leadfield 2/8196
+computing leadfield 3/8196
 .
 .
 .
-computing leadfield 2999/3000
-computing leadfield 3000/3000
-the call to "ft_prepare_leadfield" took 18 seconds and an estimated 0 MB
+computing leadfield 8195/8196
+computing leadfield 8196/8196
+the call to "ft_prepare_leadfield" took 52 seconds and an estimated 0 MB
 converting units from 'm' to 'mm'
 
 cov = 
@@ -743,32 +730,24 @@ the input is timelock data with 248 channels and 1018 timebins
 using headmodel specified in the configuration
 using gradiometers specified in the data
 creating dipole grid based on user specified dipole positions
-3000 dipoles inside, 0 dipoles outside brain
+8196 dipoles inside, 0 dipoles outside brain
 the call to "ft_prepare_sourcemodel" took 0 seconds and an estimated 0 MB
 estimating current density distribution for repetition 1
 using specified forward model
 computing MNE source reconstruction, this may take some time...
 computing the solution where the noise covariance is used for regularisation
 taking pseudo-inverse due to large condition number
-the call to "ft_sourceanalysis" took 1 seconds and an estimated 0 MB
-</pre><img vspace="5" hspace="5" src="course9_09.png" alt=""> <h2>make MNE movie<a name="13"></a></h2><pre class="codeinput">cfg = [];
-cfg.projectmom = <span class="string">'yes'</span>;
-sourced = ft_sourcedescriptives(cfg,source);
-
-
-cfg = [];
-cfg.funparameter = <span class="string">'avg.pow'</span>;
-sourced.tri=volseg.bnd.tri;
-figure;
-ft_sourcemovie(cfg,sourced);
-<span class="comment">% maybe better use freesurfer and Harvard MNE software</span>
+the call to "ft_sourceanalysis" took 2 seconds and an estimated 64 MB
+</pre><img vspace="5" hspace="5" src="course9_my09.png" alt=""> <h2>make MNE movie<a name="13"></a></h2><pre class="codeinput">source.tri=bnd.tri;
+ft_sourcemovie([],source);
+<span class="comment">% you can alternatively use freesurfer and Harvard MNE software</span>
 </pre><pre class="codeoutput">the input is source data with 3000 positions
 baseline correcting dipole moments [--------------------------------------/]
 projecting dipole moment [------------------------------------------------/]
 computing power [---------------------------------------------------------/]
 the call to "ft_sourcedescriptives" took 6 seconds and an estimated 0 MB
 the input is source data with 3000 positions
-</pre> <img vspace="5" hspace="5" src="course9_11.png" alt=""> <p class="footer"><br>
+</pre> <img vspace="5" hspace="5" src="course9_my11.png" alt=""> <p class="footer"><br>
       Published with MATLAB&reg; 7.11<br></p></div><!--
 ##### SOURCE BEGIN #####
 %% FieldTrip beamforming 2
