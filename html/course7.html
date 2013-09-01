@@ -307,10 +307,7 @@ creating layout for bti248 system
 the call to "ft_prepare_layout" took 0 seconds and an estimated 0 MB
 the call to "ft_topoplotER" took 1 seconds and an estimated 0 MB
 </pre><img vspace="5" hspace="5" src="course7_03.png" alt=""> <h2>Use AFNI MATLAB library to make images and movies from virtual sensors<a name="12"></a></h2><pre class="codeinput"><span class="comment">% estimate noise</span>
-ns=ActWgts;
-ns=ns-repmat(mean(ns,2),1,size(ns,2));
-ns=ns.*ns;
-ns=mean(ns,2);
+ns=sum(ActWgts.*ActWgts,2);
 
 <span class="comment">% get toi mean square (different than SAMerf, no BL correction)</span>
 samples=[nearest(standard.time,toi(1)),nearest(standard.time,toi(2))];
@@ -348,10 +345,7 @@ VS2Brik(cfg,vsStS);
 </pre><img vspace="5" hspace="5" src="course7_m03.png" alt="">
 </pre><pre class="codeinput">
 <span class="comment">% SAMspm</span>
-ns=ActWgts;
-ns=ns-repmat(mean(ns,2),1,size(ns,2));
-ns=ns.*ns;
-ns=mean(ns,2);
+ns=sum(ActWgts.*ActWgts,2);
 spm=zeros(size(ActWgts,1),1);
 tri=find(data.trialinfo==128);
 <span class="keyword">for</span> triali=tri'
